@@ -15,10 +15,10 @@
 **Researcher:** Chase Cooper
 
 #### Summary
-The Merkury MI-CW051 IP Camera exposes highly sensitive cryptographic materials and user network credentials across both its writable filesystems and compiled vendor binaries. Physical memory dumping reveals that mTLS RSA private keys, X.509 client certificates, and user Wi-Fi credentials are saved in cleartext within writable JFFS2 partitions. Additionally, static analysis of proprietary executables contained within read-only SquashFS partitions reveals compiled, hardcoded RSA keys and certificates embedded directly inside binary code.
+The Merkury MI-CW051 IP Camera exposes highly sensitive cryptographic materials and user network credentials across both its writable filesystems and proprietary vendor binaries. Physical memory dumping revealed that TLS RSA private keys, X.509 client certificates, and user Wi-Fi credentials are saved in cleartext within writable JFFS2 partitions. Additionally, static analysis of proprietary executables contained within read-only SquashFS partitions reveals compiled, hardcoded RSA keys and certificates embedded directly inside binary code.
 
 #### Root Cause
-The device lacks storage partition encryption at rest and fails to utilize a hardware secure enclave or Trusted Execution Environment (TEE). Secrets required for network authentication are maintained in a cleartext JSON structure on flash memory, while critical cloud communication binaries (such as `/pepper/pepper_app`) statically compile cryptographic keys directly into executable code segments.
+Secrets required for network authentication are maintained in a cleartext JSON structure on flash memory, while critical cloud communication binaries (such as `/pepper/pepper_app`) statically compile cryptographic keys directly into executable code segments.
 
 #### Impact
 An attacker who extracts these cryptographic assets can bypass implemented certificate pinning defenses completely. Because the X.509 certificates and private keys bind the camera to the Pepper IoT / Smart Home Ventures cloud infrastructure, an attacker can impersonate target hardware devices, forge backend requests, or silently intercept and decrypt HTTPS and MQTT telemetry traffic. Furthermore, extracting cleartext local wireless credentials compromises the security of the host Wi-Fi network.
@@ -31,14 +31,14 @@ An attacker who extracts these cryptographic assets can bypass implemented certi
 - Reverse engineering & extraction suite (`binwalk`, `strings`, Ghidra).
 
 **Steps:**
-1. **Hardware Extraction:** Disassemble the camera chassis and desolder the 8MB SPI NOR Flash chip (ZBIT ZB25VQ64) from the PCB using hot air rework.
-2. **Memory Dumping:** Insert the chip into the universal programmer, configure the software for the ZB25VQ64 parameters, and execute a sequential read to save the raw memory binary (`FW.bin`).
+1. **Hardware Extraction:** Disassemble the camera and desolder the 8MB SPI NOR Flash chip (ZBIT ZB25VQ64) from the PCB.
+2. **Memory Dumping:** Insert the chip into the universal flash programmer, configure the software for the ZB25VQ64 parameters, and execute a sequential read to save the raw memory binary (`FW.bin`).
 3. **Filesystem Extraction:** Run `binwalk -e FW.bin` to unpack all embedded partitions, including the writable JFFS2 volumes (`0x3B3000` and `0x3CFA7C`) and read-only SquashFS volumes (`0x1C3000` and `0x3DA000`).
-4. **Partition Forensic Analysis (JFFS2 Cleartext Config):**
+4. **Partition Analysis:**
     - Navigate to the extracted `jffs2-root` or `jffs2-root-0` directory.
     - Open the JSON-formatted `config` file and extract the exposed plaintext key-value pairs: 
         - **Key 132 & 133:** Plaintext Wi-Fi SSID and Password.
-        - **Key 134:** X.509 Client Certificate (Issued by Pepper IoT prod CA).
+        - **Key 134:** X.509 Client Certificate.
         - **Key 135:** 1024-bit RSA Private Key.
 5. **Binary Static Analysis (SquashFS Hardcoded Credentials):**
     - Navigate to the extracted secondary SquashFS partition (`3DA000.squashfs`).
