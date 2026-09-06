@@ -1,11 +1,17 @@
 # CVE-2026-xxxx
 
 **CVE ID:** Pending 
+
 **Problem Type:** CWE-798 (Use of Hard-coded Credentials), CWE-312 (Cleartext Storage of Sensitive Information)
+
 **Vendor:** Merkury Innovations
+
 **Affected Product:** Merkury MI-CW051 IP Camera
-**Product Page:** `[https://support.merkurysmart.com/hc/en-us/sections/15793498596507-CW051-Indoor-Smart-Camera](https://support.merkurysmart.com/hc/en-us/sections/15793498596507-CW051-Indoor-Smart-Camera)`
+
+**Product Page:** https://support.merkurysmart.com/hc/en-us/sections/15793498596507-CW051-Indoor-Smart-Camera
+
 **Firmware Version:** 3.0.0.086
+
 **Researcher:** Chase Cooper
 
 #### Summary
