@@ -23,7 +23,7 @@ The device lacks storage partition encryption at rest and fails to utilize a har
 #### Impact
 An attacker who extracts these cryptographic assets can bypass implemented certificate pinning defenses completely. Because the X.509 certificates and private keys bind the camera to the Pepper IoT / Smart Home Ventures cloud infrastructure, an attacker can impersonate target hardware devices, forge backend requests, or silently intercept and decrypt HTTPS and MQTT telemetry traffic. Furthermore, extracting cleartext local wireless credentials compromises the security of the host Wi-Fi network.
 
-#### Reproduction (PoC)
+### Reproduction (PoC)
 
 **Prerequisites:**
 - Merkury MI-CW051 IP Camera.
@@ -49,10 +49,10 @@ An attacker who extracts these cryptographic assets can bypass implemented certi
 
 <img width="971" height="143" alt="image" src="https://github.com/user-attachments/assets/2d8283e1-fe3d-46ef-83cb-60132289fad3" />
 
-#### Results
+### Results
 Sensitive mTLS keys and local network credentials reside in unencrypted, cleartext JSON files within JFFS2 partitions, and additional RSA private keys and X.509 certificates are compiled directly into proprietary binaries inside SquashFS partitions.
 
-#### Recommended Mitigation
+### Recommended Mitigation
 Cryptographic keys should be generated dynamically or stored securely within hardware enclaves (TPM/TEE), while storage partitions containing sensitive configurations must be encrypted at rest. Executable binaries should never contain hardcoded cryptographic credentials.
 1. **Eliminate Hardcoded Cryptographic Assets:** Remove static RSA private keys and certificates from vendor application source code. Devices should receive unique certificates provisioned during manufacturing or through secure automated enrollment mechanisms (e.g., EST/SCEP).
 2. **Encrypted Storage Partitions:** Implement disk-level encryption (such as LUKS or encrypted MTD blocks) for all non-volatile memory partitions storing configuration files or sensitive tokens.
