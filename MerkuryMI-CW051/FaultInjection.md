@@ -1,15 +1,25 @@
 # CVE-2026-xxxx
 
 **CVE ID:** Pending
-**Problem Type:** CWE-1191 (On-Chip Debug and Test Interface With Improper Access Control)
+
+**Problem Type:** CWE-1191 (On-Chip Debug and Test Interface With Improper Access Control) & CWE-1332 (Improper Handling of Faults that Lead to Instruction Skip)
+
 **Vendor:** Merkury Innovations
+
 **Affected Product:** Merkury MI-CW051 IP Camera
+
 **Product Page:** https://support.merkurysmart.com/hc/en-us/sections/15793498596507-CW051-Indoor-Smart-Camera
+
 **Firmware Version:** 3.0.0.086
+
 **Researcher:** Chase Cooper
 
 **Summary**
-The Merkury MI-CW051 IP Camera exposes active, unauthenticated diagnostic hardware interfaces (UART) and unprotected SPI flash memory traces on its PCB. Due to a lack of physical obfuscation and hardware-level anti-tamper mechanisms, an attacker with physical access can execute a timing-based fault injection attack against the SPI flash chip during the boot sequence. This forces a read error that bypasses logical access controls, dropping the attacker into an unrestricted U-Boot root shell.
+The Merkury MI-CW051 IP Camera exposes active diagnostic hardware interfaces (UART) and unprotected SPI flash memory traces on its PCB. Due to a lack of physical obfuscation and hardware-level anti-tamper mechanisms, an attacker with physical access can execute a timing-based fault injection attack against the SPI flash chip. This physical disruption targets U-Boot during the boot sequence, forcing a read error that interrupts the kernel load process. The bootloader bypasses normal access controls and bootdelay restrictions, dropping the attacker into an unrestricted U-Boot menu console.
+
+**A quick note**
+The Merkury CW051 boot sequence contains a U-Boot environment with a bootdelay=1 configuration. Sending a keystroke during the
+boot delay interrupted the automatic startup and provided access to the bootloader menu console. The bootargs environment variable was subsequently modified to change the kernel initialization behavior. Appending `init=/bin/sh` caused the system to initialize a shell instead of its normal init process, resulting in privileged shell access.
 
 **Root Cause**
 The SoC does not implement a hardware-backed Secure Boot chain and fails to properly handle physical read disruptions from the SPI NOR Flash (ZBIT ZB25VQ64). When memory access is interrupted, the bootloader defaults to an insecure, open console state rather than halting execution.
@@ -25,7 +35,7 @@ Dropping into the unrestricted U-Boot menu allows for total compromise of the ho
 
 - Merkury MI-CW051 IP Camera.
 - Multi-protocol interface board (e.g., Bus Pirate 5).
-- Physical jumper wire or fine-tipped grounded tweezers.
+- Physical jumper wire.
 
 **Steps:**
 
@@ -34,9 +44,8 @@ Dropping into the unrestricted U-Boot menu allows for total compromise of the ho
 3. **Fault Injection (Glitching):** Monitor the serial console output. Immediately after the first Auto Negotiation phase establishes U-Boot (look for the initial hardware initialization strings), but strictly before the second phase begins reading the kernel from flash memory, introduce a physical short by bridging the flash chip's DO pin to GND with the tweezers.
 4. **Triggering the Bypass:** Hold the short for approximately 1-2 seconds until the serial console outputs a read error. Release the short.
 
-**Expected Result:** The bootloader should detect a hardware failure, validate that the integrity of the boot chain is broken, and halt the system to prevent unauthorized access.
 
-**Actual Result:** The targeted disruption forces U-Boot to fail its read operation, bypasses the standard boot sequence, and defaults directly into an unrestricted bootloader command-line interface.
+The targeted disruption forces U-Boot to fail its read operation, bypasses the standard boot sequence, and defaults directly into an unrestricted bootloader menu console.
 
 **Recommended Mitigation**
 
